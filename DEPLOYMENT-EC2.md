@@ -1,0 +1,398 @@
+# Community Connect - EC2 Ubuntu Deployment Guide
+
+## 🚀 One-Click Deployment
+
+### Prerequisites
+- Ubuntu 22.04 LTS EC2 instance
+- At least t2.micro (1GB RAM)
+- Port 80 open in Security Group
+
+### Quick Deploy
+
+1. **Connect to your EC2 instance:**
+```bash
+ssh -i your-key.pem ubuntu@your-ec2-ip
+```
+
+2. **Clone or upload the project:**
+```bash
+# If using git
+git clone https://github.com/Siddhantji/connect-comunity.git
+cd connect-comunity
+
+# OR upload via SCP
+scp -i your-key.pem -r "community-connect" ubuntu@your-ec2-ip:~/
+```
+
+3. **Make scripts executable:**
+```bash
+chmod +x deploy.sh restart.sh stop.sh update.sh logs.sh
+```
+
+4. **Run one-click deployment:**
+```bash
+./deploy.sh
+```
+
+That's it! The script will:
+- ✅ Install Node.js 20.x
+- ✅ Install and configure PM2
+- ✅ Install and configure Nginx
+- ✅ Install MongoDB
+- ✅ Install dependencies
+- ✅ Build frontend
+- ✅ Start both backend and frontend
+- ✅ Configure reverse proxy
+
+### Access Your Application
+
+After deployment completes, access at:
+```
+http://your-ec2-public-ip
+```
+
+---
+
+## 📝 Management Scripts
+
+### View Status
+```bash
+pm2 status
+```
+
+### View Logs
+```bash
+./logs.sh
+# OR
+pm2 logs
+```
+
+### Restart Services
+```bash
+./restart.sh
+```
+
+### Stop Services
+```bash
+./stop.sh
+```
+
+### Update Application
+```bash
+./update.sh
+```
+
+---
+
+## 🔧 Manual Commands
+
+### PM2 Management
+```bash
+# View all processes
+pm2 list
+
+# View specific logs
+pm2 logs community-connect-backend
+pm2 logs community-connect-frontend
+
+# Restart specific service
+pm2 restart community-connect-backend
+pm2 restart community-connect-frontend
+
+# Monitor resources
+pm2 monit
+
+# Delete processes
+pm2 delete community-connect-backend
+pm2 delete community-connect-frontend
+```
+
+### Nginx Management
+```bash
+# Check status
+sudo systemctl status nginx
+
+# Restart
+sudo systemctl restart nginx
+
+# View logs
+sudo tail -f /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log
+
+# Test configuration
+sudo nginx -t
+```
+
+### MongoDB Management
+```bash
+# Check status
+sudo systemctl status mongod
+
+# Start/Stop/Restart
+sudo systemctl start mongod
+sudo systemctl stop mongod
+sudo systemctl restart mongod
+
+# Access MongoDB shell
+mongosh
+```
+
+---
+
+## 🔐 Security Group Configuration
+
+In AWS EC2 Security Group, allow:
+
+| Type | Protocol | Port | Source |
+|------|----------|------|--------|
+| HTTP | TCP | 80 | 0.0.0.0/0 |
+| SSH | TCP | 22 | Your IP |
+| Custom TCP | TCP | 3000 | 0.0.0.0/0 (optional for debugging) |
+| Custom TCP | TCP | 5000 | 0.0.0.0/0 (optional for debugging) |
+
+---
+
+## 🗂️ File Structure on EC2
+
+```
+/home/ubuntu/
+└── community-connect/
+    ├── backend/
+    │   ├── server.js
+    │   ├── package.json
+    │   ├── .env                    # Created by deploy script
+    │   └── node_modules/
+    ├── frontend/
+    │   ├── src/
+    │   ├── package.json
+    │   ├── .env.local              # Created by deploy script
+    │   ├── .next/                  # Build output
+    │   └── node_modules/
+    ├── deploy.sh                   # Main deployment script
+    ├── restart.sh                  # Restart services
+    ├── stop.sh                     # Stop services
+    ├── update.sh                   # Update and redeploy
+    └── logs.sh                     # View logs
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+### Application not accessible
+```bash
+# Check PM2 status
+pm2 status
+
+# Check Nginx status
+sudo systemctl status nginx
+
+# Check Nginx configuration
+sudo nginx -t
+
+# View PM2 logs
+pm2 logs
+
+# View Nginx error logs
+sudo tail -f /var/log/nginx/error.log
+```
+
+### Backend not connecting to MongoDB
+```bash
+# Check MongoDB status
+sudo systemctl status mongod
+
+# Start MongoDB if stopped
+sudo systemctl start mongod
+
+# Check MongoDB logs
+sudo tail -f /var/log/mongodb/mongod.log
+
+# Restart backend
+pm2 restart community-connect-backend
+```
+
+### Port already in use
+```bash
+# Find process using port 3000 or 5000
+sudo lsof -i :3000
+sudo lsof -i :5000
+
+# Kill process
+sudo kill -9 <PID>
+
+# Restart services
+./restart.sh
+```
+
+### Frontend build fails
+```bash
+# Clear cache and rebuild
+cd frontend
+rm -rf .next node_modules
+npm install
+npm run build
+pm2 restart community-connect-frontend
+```
+
+---
+
+## 📊 Monitoring
+
+### Check Application Health
+```bash
+# Check if backend is responding
+curl http://localhost:5000/api
+
+# Check if frontend is responding
+curl http://localhost:3000
+
+# Check Nginx proxy
+curl http://localhost
+```
+
+### Monitor Resources
+```bash
+# PM2 monitoring
+pm2 monit
+
+# System resources
+htop
+
+# Disk usage
+df -h
+
+# Memory usage
+free -h
+```
+
+---
+
+## 🔄 Production Configuration
+
+### Environment Variables
+
+**Backend (.env):**
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/community-connect
+JWT_SECRET=<auto-generated>
+NODE_ENV=production
+```
+
+**Frontend (.env.local):**
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
+
+### Nginx Configuration
+Located at: `/etc/nginx/sites-available/community-connect`
+
+---
+
+## 📱 Testing Deployment
+
+1. **Test Backend:**
+```bash
+curl http://your-ec2-ip/api
+```
+
+2. **Test Frontend:**
+Open browser: `http://your-ec2-ip`
+
+3. **Test Full Flow:**
+- Register a user
+- Login
+- Create project (as organization)
+- Apply to project (as volunteer)
+
+---
+
+## 💾 Backup
+
+### Backup MongoDB
+```bash
+# Create backup
+mongodump --out /home/ubuntu/backup/$(date +%Y%m%d)
+
+# Restore backup
+mongorestore /home/ubuntu/backup/20250128
+```
+
+### Backup Application
+```bash
+# Backup entire application
+tar -czf community-connect-backup-$(date +%Y%m%d).tar.gz ~/community-connect
+```
+
+---
+
+## 🔄 Auto-Start on Reboot
+
+Services are configured to auto-start:
+- ✅ PM2 processes (via PM2 startup)
+- ✅ Nginx (via systemd)
+- ✅ MongoDB (via systemd)
+
+Test by rebooting:
+```bash
+sudo reboot
+```
+
+After reboot, check:
+```bash
+pm2 list
+sudo systemctl status nginx
+sudo systemctl status mongod
+```
+
+---
+
+## 📞 Support
+
+For issues:
+1. Check logs: `./logs.sh`
+2. Check PM2 status: `pm2 status`
+3. Check Nginx: `sudo systemctl status nginx`
+4. Restart all: `./restart.sh`
+
+---
+
+## 🎓 College Project Notes
+
+**AWS Account ID:** Make sure to take screenshots showing your AWS Account ID in the top-right corner of AWS Console.
+
+**Required Screenshots:**
+1. EC2 Dashboard with Account ID
+2. Running EC2 instance details
+3. Security Group configuration
+4. Application running in browser
+5. PM2 status showing running processes
+
+**Cost:** This setup uses AWS Free Tier:
+- t2.micro EC2 instance (750 hours/month free)
+- No additional services needed
+
+---
+
+## ✅ Deployment Checklist
+
+- [ ] EC2 instance launched (Ubuntu 22.04)
+- [ ] Security Group configured (Port 80, 22)
+- [ ] Connected via SSH
+- [ ] Project uploaded/cloned
+- [ ] `chmod +x *.sh` executed
+- [ ] `./deploy.sh` completed successfully
+- [ ] Application accessible at EC2 IP
+- [ ] PM2 processes running
+- [ ] Nginx configured
+- [ ] MongoDB running
+- [ ] Test registration
+- [ ] Test login
+- [ ] Test project creation
+- [ ] Screenshots captured with AWS Account ID
+
+---
+
+**Deployment Time:** ~10-15 minutes
+**Last Updated:** October 2025

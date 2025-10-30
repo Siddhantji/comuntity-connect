@@ -12,10 +12,6 @@ backend/build/
 
 # Environment files
 
-.env.local
-.env.production
-.env.development
-
 
 # Logs
 logs/
